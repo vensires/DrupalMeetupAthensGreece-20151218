@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>DrupalMeetup - 18/12/2015</title>
+
+    <meta name="description" content="Accessing node content">
+    <meta name="author" content="Panagiotis Moutsopoulos">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/serif.css" id="theme">
+    <link rel="stylesheet" href="css/custom/custom.css">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <!-- Any section element inside of this container is displayed as a slide -->
+      <div class="slides">
+        <section data-background="images/generic.jpg">
+          <h1>Node Access in module code</h1>
+          <h3>Twitter: @pmoutsop</h3>
+          <h3>http://drupal.org/u/vensires</h3>
+        </section>
+
+        <section data-background="images/content_access.png" data-background-transition="zoom">
+          <h3>Modules we all(?) know about</h3>
+          <ul>
+            <li><small>Content Access (content_access)</small></li>
+            <li><small>Node Access (node_access)</small></li>
+            <li><small>Node access user reference (nodeaccess_userreference)</small></li>
+            <li><small>Node access node reference (nodeaccess_nodereference)</small></li>
+            <li><small>@more <a href="https://www.drupal.org/node/206766" target="_blank">https://www.drupal.org/node/206766</a></small></li>
+          </ul>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h3>Hooks</h3>
+          <ul>
+            <li>hook_node_access($node, $op, $account)</li>
+            <li>hook_node_grants($account, $op)</li>
+            <li>hook_node_access_records($node)</li>
+          </ul>
+        </section>
+        
+        <section>
+          <section data-background="images/generic_white.jpg">
+            <h3>hook_node_access($node, $op, $account)</h3>
+            <pre><code class="php">function meetup_node_access($node, $op, $account) {
+  if($node->type = 'super_secret_node_type') {
+    switch($op) {
+      case 'create':
+        if(user_access("create {$node->type} content", $account)) {
+          return NODE_ACCESS_ALLOW;
+        }
+        break;
+      case 'view':
+        return NODE_ACCESS_DENY;
+    }
+  }
+  // return NODE_ACCESS_IGNORE;
+}</code></pre>
+          </section>
+          <section data-background="images/generic_white.jpg">
+            <h3>hook_node_access() #2</h3><pre><code class="php">function meetup_node_access($node, $op, $account) {
+  if($node->type = 'super_secret_node_type') {
+    switch($op) {
+      case 'create':
+        if(user_access("create {$node->type} content", $account)
+            || in_array($account->uid, array(2, 3))) {
+          return NODE_ACCESS_ALLOW;
+        }
+        break;
+      case 'view':
+        return NODE_ACCESS_DENY;
+    }
+  }
+  // return NODE_ACCESS_IGNORE;
+}</code></pre>
+          </section>
+        </section>
+
+        <section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <h3>~</h3>
+            <h2>Fairytale</h2>
+            <h3>~</h3>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 1.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 2.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 3.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 4.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 5.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 6.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <img src="images/storyteller - 7.png"/>
+          </section>
+          <section data-background="images/generic-white.jpg" data-transition="fade">
+            <h3>...and they lived happily ever after</h3>
+          </section>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h3>hook_node_grants()</h3>
+          <pre><code class="php">function meetup_node_grants($account, $op) {
+  $grants = array();
+  if ($account->uid) {
+    // Checking authenticated users only.
+    $grants['meetup_author'] = array($account->uid);
+    if(in_array($account->uid, array(2, 3))) {
+      $grants['meetup_secret'] = array(1);
+    }
+  }
+  return $grants;
+}</code></pre>
+        </section>
+
+        <section>
+          <section data-background="images/generic_white.jpg">
+            <h3>hook_node_access_records() #1</h3>
+<pre><code class="php">function meetup_node_access_records($node) {
+  $grants = array();
+  switch($node->type) {
+    case 'article':
+    case 'blog':
+    case 'page':
+      $grants[] = array(
+        'realm' => 'meetup_author',
+        'gid' => $node->uid,
+        'grant_view' => 1,
+        'grant_update' => 1,
+        'grant_delete' => 1,
+        'priority' => 0,
+      );
+      break;
+    case 'super_secret_node_type':
+      $grants[] = array(
+        'realm' => 'meetup_secret',
+        'gid' => 1,
+        'grant_view' => 1,
+        'grant_update' => 1,
+        'grant_delete' => 1,
+        'priority' => 0,
+      );
+      break;
+  }
+  return $grants;
+}</code></pre>
+          </section>
+          <section data-background="images/generic_white.jpg">
+            <h3>hook_node_access_records() #2</h3>
+<pre><code class="php">function meetup_node_access_records($node) {
+  $grants = array();
+  switch($node->type) {
+    // [...]
+    case 'super_secret_node_type':
+      $grants[] = array(
+        'realm' => 'all',
+        'gid' => 0,
+        'grant_view' => 0,
+        'grant_update' => 0,
+        'grant_delete' => 0,
+        'priority' => 1,
+      );
+      break;
+  }
+  return $grants;
+}</code></pre>
+          </section>
+        </section>
+        
+        <section>
+          <section data-background="images/generic_white.jpg">
+            <strong>Get it together #1</strong>
+            <img src="images/node_access.png"/>
+          </section>
+        
+          <section data-background="images/generic_white.jpg">
+            <strong>Get it together #2</strong>
+            <img src="images/node_access_2.png"/>
+          </section>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h3>Debugging with Devel Node Access</h3>
+          <img src="images/devel_node_access_by_user_block.jpg"/>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h3>Combining multiple<br/>access control modules</h3>
+          <blockquote>"Using multiple access control modules together may produce undesirable results since access is granted as soon as only one module grants it. This is a direct consequence of the whitelisting philosophy behind Drupal's grant system. <span style="color:green;">There exists a <span style="color:red;">marked as unsupported</span> module for Drupal 7 (<a href="https://drupal.org/project/acb" target="_blank">Access Control Bridge</a>) that solves this by requiring all controlling modules to grant access before allowing access</span>."</blockquote>
+          <small>~<a href="https://www.drupal.org/node/602730" target="_blank">https://www.drupal.org/node/602730</a>~</small>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h1>Remember</h1>
+          <h3>Denying is not recorded to database!<br/>It is implicit!</h3>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h1>Problem!</h1>
+          <h2>Block Caching No More!</h2>
+        </section>
+
+        <section data-background="images/generic_white.jpg">
+          <h1>Solution!</h1>
+          <p>Add this to your settings.php</p>
+          <pre><code class="php">$conf['block_cache_bypass_node_grants'] = TRUE;</code></pre>
+        </section>
+        <section data-background="images/generic.jpg">
+          <h1>The END</h1>
+          <h2>Node Access in module code</h2>
+          <h3>Twitter: @pmoutsop</h3>
+          <h3>http://drupal.org/u/vensires</h3>
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+    <script>
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'concave', // none/fade/slide/convex/concave/zoom
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true },
+          { src: 'plugin/notes/notes.js', async: true }
+        ]
+      });
+    </script>
+  </body>
+</html>
